@@ -1,0 +1,108 @@
+/* App background */
+.app {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #89f7fe, #66a6ff);
+  padding: 40px;
+  font-family: Arial, sans-serif;
+}
+
+/* Main box */
+.todo-container {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Heading */
+.todo-container h1 {
+  text-align: center;
+  color: #4CAF50;
+  margin-bottom: 20px;
+}
+
+/* Input area */
+.input-section {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.input-section input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px 0 0 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.input-section button {
+  padding: 12px 20px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  font-weight: bold;
+  border-radius: 0 10px 10px 0;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.input-section button:hover {
+  background-color: #388e3c;
+}
+
+/* Todo list */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background-color: #fff5f5;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: 0.3s;
+}
+
+/* Completed todo */
+li.completed {
+  background-color: #e6ffe6;
+}
+
+li.completed span {
+  text-decoration: line-through;
+  color: #888;
+}
+
+/* Buttons */
+.actions button {
+  padding: 6px 12px;
+  margin-left: 8px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+  color: white;
+}
+
+.actions button:first-child {
+  background-color: #4CAF50;
+}
+
+.actions button:first-child:hover {
+  background-color: #388e3c;
+}
+
+.actions button.delete {
+  background-color: #f44336;
+}
+
+.actions button.delete:hover {
+  background-color: #c62828;
+}
