@@ -18,7 +18,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // Import Todo model
-const Todo = require("./Todo");
+const Todo = require("./models/Todo.js");
 
 const corsOptions = {
   origin: "http://localhost:3000", // React app
