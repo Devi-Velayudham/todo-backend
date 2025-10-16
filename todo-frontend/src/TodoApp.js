@@ -24,7 +24,7 @@ function TodoApp() {
   };
 
   const toggleComplete = (id, completed) => {
-    fetch(`http://localhost:5000/todos/${id}`, {
+    fetch(`https://todo-backend-samo.onrender.com/todos/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed })

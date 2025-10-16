@@ -21,7 +21,7 @@ mongoose.connect(process.env.MONGO_URI, {
 const Todo = require("./models/Todo.js");
 
 const corsOptions = {
-  origin: "http://localhost:3000", // React app
+  origin: "https://todo-frontend-app-bgpi.onrender.com", // React app
   credentials: true,
 };
 
