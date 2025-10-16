@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
+const Todo = require("./models/Todo.js");
+
 const app = express();
 
 // Middleware
@@ -25,7 +27,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // Import Todo model
-const Todo = require("./models/Todo.js");
+
 
 
 
