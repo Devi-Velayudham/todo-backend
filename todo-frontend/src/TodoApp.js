@@ -6,14 +6,14 @@ function TodoApp() {
   const [text, setText] = useState("");
 
   useEffect(() => {
-    fetch("https://todo-backend-samo.onrender.com/todos")
+    fetch("https://todo-backend-sawo.onrender.com")
       .then(res => res.json())
       .then(data => setTodos(data));
   }, []);
 
   const addTodo = () => {
     if (!text) return;
-    fetch("https://todo-backend-samo.onrender.com/todos", {
+    fetch("https://todo-backend-sawo.onrender.com", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text })
@@ -24,7 +24,7 @@ function TodoApp() {
   };
 
   const toggleComplete = (id, completed) => {
-    fetch(`https://todo-backend-samo.onrender.com/todos/${id}`, {
+    fetch(`https://todo-backend-sawo.onrender.com/todos/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed })
@@ -36,7 +36,7 @@ function TodoApp() {
   };
 
   const deleteTodo = (id) => {
-    fetch(`https://todo-backend-samo.onrender.com/todos/${id}`, { method: "DELETE" })
+    fetch(`https://todo-backend-sawo.onrender.com/todos/${id}`, { method: "DELETE" })
       .then(() => setTodos(todos.filter(t => t._id !== id)));
   };
 
