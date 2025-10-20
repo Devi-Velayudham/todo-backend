@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 
 const corsOptions = {
-    origin: "https://todo-frontend-app-bgpi.onrender.com", // React app
+    origin: "https://todo-frontend-app-bqpl.onrender.com", // React app
     credentials: true,
 };
 
