@@ -6,14 +6,14 @@ function TodoApp() {
   const [text, setText] = useState("");
 
   useEffect(() => {
-    fetch("https://todo-backend-sawo.onrender.com")
+    fetch("https://todo-backend-sawo.onrender.com/todos")
       .then(res => res.json())
       .then(data => setTodos(data));
   }, []);
 
   const addTodo = () => {
     if (!text) return;
-    fetch("https://todo-backend-sawo.onrender.com", {
+    fetch("https://todo-backend-sawo.onrender.com/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text })
