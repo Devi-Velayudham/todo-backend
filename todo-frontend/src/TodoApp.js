@@ -9,14 +9,14 @@ function TodoApp({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper function for all authenticated fetches (Updated for correct header merging)
+  // Helper function for all authenticated fetches
   const authenticatedFetch = async (url, options = {}) => {
     // 1. Define default headers and credentials
     const defaultHeaders = { 
         'Content-Type': 'application/json',
     };
 
-    // 2. Merge user-provided options with defaults, ensuring credentials and method are prioritized
+    // 2. Construct final fetch options
     const fetchOptions = {
         // Always include credentials for secure cookie transfer
         credentials: 'include', 
@@ -30,24 +30,24 @@ function TodoApp({ onLogout }) {
         // Spread remaining options (like method, body, etc.)
         ...options 
     };
-    // We must delete the inner 'headers' from the spread options so it doesn't
-    // override the full headers object we just created.
-    delete fetchOptions.headers; 
+    // Remove the original 'headers' property to avoid duplication when spreading options
+    delete fetchOptions.headers; 
 
-
+    // Execute the fetch request
     const response = await fetch(url, { ...fetchOptions, headers: fetchOptions.headers });
     
-    // Check for 401 on every authenticated request
+    // Critical: Check for 401 on every authenticated request
     if (response.status === 401) {
         console.error("Authentication failed during CRUD operation (401). Logging out user.");
         onLogout(); 
+        // Throw an error to stop further processing in the calling function
         throw new Error("Unauthorized"); 
     }
 
     return response;
   }
-    
-  // Function to fetch todos and include credentials
+    
+  // Function to fetch todos 
   const fetchTodos = async () => {
     setError(null);
     setLoading(true);
@@ -55,11 +55,8 @@ function TodoApp({ onLogout }) {
       // Use the authenticatedFetch for GET request
       const response = await authenticatedFetch(`${BACKEND_URL}/todos`, {
         method: "GET",
-        // Note: We don't need to specify credentials or headers here, 
-        // as authenticatedFetch handles it.
       });
 
-      // The 401 check is now inside authenticatedFetch, so we check for the response status.
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -69,10 +66,9 @@ function TodoApp({ onLogout }) {
 
     } catch (err) {
       console.error("Error fetching todos:", err);
-      // Check if the error was the "Unauthorized" thrown by authenticatedFetch
+      // Only set an error message if the error wasn't the logout trigger
       if (err.message !== "Unauthorized") {
-          // If it wasn't a log out, then display the error
-          setError("Failed to load todos. You may need to log in again.");
+          setError("Failed to load todos. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -81,6 +77,7 @@ function TodoApp({ onLogout }) {
 
   // Initial fetch on component mount
   useEffect(() => {
+    // Check if the component is already logged in (based on App.js) before fetching
     fetchTodos();
   }, []); 
 
@@ -88,12 +85,11 @@ function TodoApp({ onLogout }) {
   // --- CRUD Functions ---
 
   const addTodo = async () => {
-    if (!text) return;
-    const todoText = text;
+    if (!text.trim()) return;
+    const todoText = text.trim();
     setText(""); // Clear input immediately
     
     try {
-      // Uses authenticatedFetch which correctly includes credentials and Content-Type
       const response = await authenticatedFetch(`${BACKEND_URL}/todos`, {
         method: "POST",
         body: JSON.stringify({ text: todoText })
@@ -115,7 +111,6 @@ function TodoApp({ onLogout }) {
 
   const toggleComplete = async (id, completed) => {
     try {
-      // Uses authenticatedFetch which correctly includes credentials and Content-Type
       const response = await authenticatedFetch(`${BACKEND_URL}/todos/${id}`, {
         method: "PUT",
         body: JSON.stringify({ completed: !completed }) // Toggle the value
@@ -136,7 +131,6 @@ function TodoApp({ onLogout }) {
 
   const deleteTodo = async (id) => {
     try {
-      // Uses authenticatedFetch which correctly includes credentials and Content-Type
       const response = await authenticatedFetch(`${BACKEND_URL}/todos/${id}`, { 
         method: "DELETE" 
       });
@@ -162,6 +156,7 @@ function TodoApp({ onLogout }) {
           <h1>🌟 My Todo List</h1>
           <p>Loading your list...</p>
         </div>
+        <button onClick={onLogout} style={{ position: 'absolute', bottom: '10px', right: '10px' }}>Log Out</button>
       </div>
     );
   }
