@@ -3,19 +3,18 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser'); // NEW: For handling cookies
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 require('dotenv').config(); // Load environment variables
 
 // --- Models ---
 const User = require('./models/User.js');
-const Todo = require('./models/Todo.js'); // Assuming you update Todo model later
+const Todo = require('./models/Todo.js');
 
 // --- Initialization ---
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-// IMPORTANT: Use the same JWT_SECRET variable in your .env file
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret_key'; 
 
 // --- CORS Configuration (Crucial for Deployment) ---
@@ -27,7 +26,7 @@ const corsOptions = {
 
 // --- Middleware ---
 app.use(express.json());
-app.use(cookieParser()); // NEW: Use cookie parser
+app.use(cookieParser());
 app.use(cors(corsOptions));
 
 // --- Database Connection ---
@@ -41,14 +40,14 @@ const protect = (req, res, next) => {
     const token = req.cookies.token;
 
     if (!token) {
-        // For unauthenticated users, we return a 401
         return res.status(401).json({ message: 'Not authorized, please log in.' });
     }
 
     try {
-        // Verify token
+        // Verify token and extract the user ID
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded; // Attach user payload (user ID) to the request
+        // req.user.id will now contain the MongoDB ObjectId of the user
+        req.user = decoded; 
         next();
     } catch (error) {
         res.status(401).json({ message: 'Not authorized, token failed.' });
@@ -59,7 +58,6 @@ const protect = (req, res, next) => {
 // --- Authentication Routes ---
 
 // @route POST /register
-// @desc Register new user (Uses the logic you previously had)
 app.post('/register', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Please enter all fields' });
@@ -83,7 +81,6 @@ app.post('/register', async (req, res) => {
 });
 
 // @route POST /login
-// @desc Authenticate user & set token in cookie (THIS WAS THE MISSING ROUTE)
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -102,8 +99,8 @@ app.post('/login', async (req, res) => {
         // Set token in HTTP-only cookie
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true, // MUST be true for Render (HTTPS)
-            sameSite: 'none', // MUST be 'none' for cross-site cookie
+            secure: true, 
+            sameSite: 'none', 
             maxAge: 3600000 // 1 hour
         });
 
@@ -120,7 +117,6 @@ app.post('/login', async (req, res) => {
 
 
 // @route GET /logout
-// @desc Clear cookie to log user out
 app.get('/logout', (req, res) => {
     res.clearCookie('token', { 
         httpOnly: true,
@@ -131,60 +127,71 @@ app.get('/logout', (req, res) => {
 });
 
 
-// --- Todo Routes (Now Protected) ---
-// Note: We are using protect middleware to secure all Todo routes
+// --- Todo Routes (User-Aware) ---
 
-// Get all todos
+// Get all todos for the logged-in user
 app.get("/todos", protect, async (req, res) => {
-  try {
-    // IMPORTANT: In a real app, you would filter by req.user.id
-    // For now, we'll keep the simple find() for demonstration:
-    const todos = await Todo.find(); 
-    res.json(todos);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        // FIX 1: Filter todos by the logged-in user's ID (req.user.id)
+        const todos = await Todo.find({ user: req.user.id }).sort({ date: -1 });
+        res.json(todos);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Add a new todo
+// Add a new todo for the logged-in user
 app.post("/todos", protect, async (req, res) => {
-  try {
-    const newTodo = new Todo({
-      text: req.body.text,
-      completed: false
-      // In a real app: user: req.user.id
-    });
-    const savedTodo = await newTodo.save();
-    res.json(savedTodo);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        const newTodo = new Todo({
+            text: req.body.text,
+            completed: false,
+            // FIX 2: Assign the user ID from the token payload
+            user: req.user.id 
+        });
+        const savedTodo = await newTodo.save();
+        res.json(savedTodo);
+    } catch (err) {
+        console.error(err.message);
+        // Use 400 if validation fails (e.g., text missing)
+        res.status(400).json({ error: "Failed to create todo. Check text or model fields." });
+    }
 });
 
 // Update a todo (mark complete/incomplete)
 app.put("/todos/:id", protect, async (req, res) => {
-  try {
-    const updatedTodo = await Todo.findByIdAndUpdate(
-      req.params.id,
-      { completed: req.body.completed },
-      { new: true }
-    );
-    // In a real app, ensure req.user.id owns this todo before updating
-    res.json(updatedTodo);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        // SECURITY FIX: Ensure the user owns this todo before updating
+        const updatedTodo = await Todo.findOneAndUpdate(
+            { _id: req.params.id, user: req.user.id }, // Find by ID AND User ID
+            { completed: req.body.completed },
+            { new: true }
+        );
+
+        if (!updatedTodo) {
+            return res.status(404).json({ message: "Todo not found or does not belong to user." });
+        }
+
+        res.json(updatedTodo);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Delete a todo
 app.delete("/todos/:id", protect, async (req, res) => {
-  try {
-    // In a real app, ensure req.user.id owns this todo before deleting
-    await Todo.findByIdAndDelete(req.params.id);
-    res.json({ message: "Todo deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        // SECURITY FIX: Ensure the user owns this todo before deleting
+        const result = await Todo.deleteOne({ _id: req.params.id, user: req.user.id });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: "Todo not found or does not belong to user." });
+        }
+
+        res.json({ message: "Todo deleted" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 
