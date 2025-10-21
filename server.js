@@ -98,11 +98,13 @@ app.post('/login', async (req, res) => {
 
         // Set token in HTTP-only cookie
         res.cookie('token', token, {
-            httpOnly: true,
-            secure: true, 
-            sameSite: 'none', 
-            maxAge: 3600000 // 1 hour
-        });
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    // CRITICAL ADDITION: Explicitly setting the domain can fix cross-site issues on Render
+    domain: '.onrender.com', 
+    maxAge: 3600000
+});
 
         res.json({ 
             message: 'Login successful',
