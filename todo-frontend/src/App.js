@@ -6,7 +6,8 @@ import Login from './Login';
 const BACKEND_URL = "https://todo-backend-sawo.onrender.com"; // Define the URL once
 
 function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    // isAuthenticated must be TRUE to show TodoApp
+    const [isAuthenticated, setIsAuthenticated] = useState(false); 
     const [currentView, setCurrentView] = useState('login'); 
 
     // --- LOGOUT FUNCTION ---
@@ -18,19 +19,19 @@ function App() {
                 credentials: 'include', // Send the cookie so the backend knows which one to clear
             });
         } catch (error) {
-            // Log the error but proceed with client state reset
-            console.error("Logout request failed:", error);
+            console.error("Logout request failed (this is often fine):", error);
         }
         
-        // 2. Reset frontend state, which automatically switches the view to Login
+        // 2. Reset frontend state
         setIsAuthenticated(false); 
         setCurrentView('login');  
     };
     // ----------------------------
 
+    // CRITICAL: This is called ONLY from Login.js on successful login (HTTP 200)
     const handleLoginSuccess = () => {
-        setIsAuthenticated(true); 
-        setCurrentView('todo');    
+        setIsAuthenticated(true); // SETS AUTHENTICATED TO TRUE
+        setCurrentView('todo');     // SWITCHES VIEW TO TODO
     };
     
     const handleRegisterSuccess = () => {
@@ -39,7 +40,7 @@ function App() {
 
     // --- RENDER LOGIC ---
     
-    // 1. If the user is authenticated, show the ToDo list and pass the logout handler.
+    // 1. If isAuthenticated is TRUE, this is the screen the user MUST see.
     if (isAuthenticated) {
         // Pass the logout function as a prop
         return <TodoApp onLogout={handleLogout} />; 
@@ -55,7 +56,7 @@ function App() {
         );
     }
     
-    // 3. Otherwise, show the Login page.
+    // 3. Default (currentView === 'login' AND !isAuthenticated)
     return (
         <Login 
             onLoginSuccess={handleLoginSuccess}
