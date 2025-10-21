@@ -8,6 +8,7 @@ const cors = require('cors');
 require('dotenv').config(); // Load environment variables
 
 // --- Models ---
+// NOTE: Ensure User.js and Todo.js paths are correct for your local setup
 const User = require('./models/User.js');
 const Todo = require('./models/Todo.js');
 
@@ -15,7 +16,8 @@ const Todo = require('./models/Todo.js');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret_key'; 
+// Use the secret from environment variables which you set on Render!
+const JWT_SECRET = process.env.JWT_SECRET; 
 
 // --- CORS Configuration (Crucial for Deployment) ---
 const corsOptions = {
@@ -37,19 +39,22 @@ mongoose.connect(MONGO_URI)
 
 // Middleware to protect routes (checks for JWT in cookie)
 const protect = (req, res, next) => {
+    // We expect the token to be stored in a cookie named 'token'
     const token = req.cookies.token;
 
     if (!token) {
+        // If no token is present, respond with 401
         return res.status(401).json({ message: 'Not authorized, please log in.' });
     }
 
     try {
-        // Verify token and extract the user ID
+        // Verify token using the secret from Render environment variables
         const decoded = jwt.verify(token, JWT_SECRET);
-        // req.user.id will now contain the MongoDB ObjectId of the user
+        // Attach the user ID to the request object
         req.user = decoded; 
         next();
     } catch (error) {
+        // If verification fails (e.g., wrong secret, token expired), respond with 401
         res.status(401).json({ message: 'Not authorized, token failed.' });
     }
 };
@@ -98,13 +103,13 @@ app.post('/login', async (req, res) => {
 
         // Set token in HTTP-only cookie
         res.cookie('token', token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    // CRITICAL ADDITION: Explicitly setting the domain can fix cross-site issues on Render
-    domain: '.onrender.com', 
-    maxAge: 3600000
-});
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            // CRITICAL FOR RENDER: Explicitly setting the domain 
+            domain: '.onrender.com', 
+            maxAge: 3600000 // 1 hour
+        });
 
         res.json({ 
             message: 'Login successful',
@@ -118,14 +123,23 @@ app.post('/login', async (req, res) => {
 });
 
 
-// @route GET /logout
-app.get('/logout', (req, res) => {
+// @route POST /logout (FIXED: Changed from GET to POST and added cache-disabling headers)
+app.post('/logout', (req, res) => {
+    // 1. Clear the authentication cookie.
     res.clearCookie('token', { 
         httpOnly: true,
         secure: true, 
-        sameSite: 'none'
+        sameSite: 'none',
+        domain: '.onrender.com' // Use the same domain settings for clearing
     });
-    res.json({ message: 'Logged out successfully' });
+
+    // 2. Add headers to explicitly prevent the browser and proxies from caching this response (Fixes 304)
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    // 3. Send a successful response
+    res.status(200).json({ message: "Logged out successfully." });
 });
 
 
@@ -134,7 +148,7 @@ app.get('/logout', (req, res) => {
 // Get all todos for the logged-in user
 app.get("/todos", protect, async (req, res) => {
     try {
-        // FIX 1: Filter todos by the logged-in user's ID (req.user.id)
+        // Filter todos by the logged-in user's ID (req.user.id)
         const todos = await Todo.find({ user: req.user.id }).sort({ date: -1 });
         res.json(todos);
     } catch (err) {
@@ -148,14 +162,13 @@ app.post("/todos", protect, async (req, res) => {
         const newTodo = new Todo({
             text: req.body.text,
             completed: false,
-            // FIX 2: Assign the user ID from the token payload
+            // Assign the user ID from the token payload
             user: req.user.id 
         });
         const savedTodo = await newTodo.save();
         res.json(savedTodo);
     } catch (err) {
         console.error(err.message);
-        // Use 400 if validation fails (e.g., text missing)
         res.status(400).json({ error: "Failed to create todo. Check text or model fields." });
     }
 });
