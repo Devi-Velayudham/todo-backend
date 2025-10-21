@@ -1,32 +1,48 @@
 import React, { useState } from 'react';
-import TodoApp from './TodoApp'; // Your original ToDo list component
+import TodoApp from './TodoApp'; 
 import Register from './Register'; 
 import Login from './Login'; 
 
+const BACKEND_URL = "https://todo-backend-sawo.onrender.com"; // Define the URL once
+
 function App() {
-    // 1. State for Login Status (Will be set to true upon successful login)
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    
-    // 2. State to control which form/view to show: 'login' (default) or 'register' or 'todo'
     const [currentView, setCurrentView] = useState('login'); 
 
-    // Function called by Login.js when login succeeds
+    // --- LOGOUT FUNCTION ---
+    const handleLogout = async () => {
+        // 1. Tell the backend to clear the cookie
+        try {
+            await fetch(`${BACKEND_URL}/logout`, {
+                method: 'GET',
+                credentials: 'include', // Send the cookie so the backend knows which one to clear
+            });
+        } catch (error) {
+            // Log the error but proceed with client state reset
+            console.error("Logout request failed:", error);
+        }
+        
+        // 2. Reset frontend state, which automatically switches the view to Login
+        setIsAuthenticated(false); 
+        setCurrentView('login');  
+    };
+    // ----------------------------
+
     const handleLoginSuccess = () => {
         setIsAuthenticated(true); 
-        setCurrentView('todo');    // Switch to the ToDo list
+        setCurrentView('todo');    
     };
     
-    // Function called by Register.js when registration succeeds
     const handleRegisterSuccess = () => {
-        setCurrentView('login'); // After signing up, send them to the Login screen
+        setCurrentView('login'); 
     }
 
     // --- RENDER LOGIC ---
     
-    // 1. If the user is authenticated, show the ToDo list.
+    // 1. If the user is authenticated, show the ToDo list and pass the logout handler.
     if (isAuthenticated) {
-        // NOTE: We will add a logout function later
-        return <TodoApp />; 
+        // Pass the logout function as a prop
+        return <TodoApp onLogout={handleLogout} />; 
     }
 
     // 2. If not authenticated, check which form to show.
@@ -34,16 +50,16 @@ function App() {
         return (
             <Register 
                 onSuccess={handleRegisterSuccess} 
-                onSwitchToLogin={() => setCurrentView('login')} // Button on Register page calls this
+                onSwitchToLogin={() => setCurrentView('login')} 
             />
         );
     }
     
-    // 3. Otherwise (if currentView is 'login' or default), show the Login page.
+    // 3. Otherwise, show the Login page.
     return (
         <Login 
             onLoginSuccess={handleLoginSuccess}
-            onSwitchToRegister={() => setCurrentView('register')} // Button on Login page calls this
+            onSwitchToRegister={() => setCurrentView('register')} 
         />
     );
 }
