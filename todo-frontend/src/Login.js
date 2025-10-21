@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import './TodoApp.css'; // Use the same CSS for styling
+import './TodoApp.css'; 
+
+// Define the backend URL once
+const backendURL = "https://todo-backend-sawo.onrender.com"; 
 
 // onLoginSuccess and onSwitchToRegister are functions passed from App.js
 function Login({ onLoginSuccess, onSwitchToRegister }) {
@@ -7,9 +10,6 @@ function Login({ onLoginSuccess, onSwitchToRegister }) {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     
-    // Use the live backend URL
-    const backendURL = "https://todo-backend-sawo.onrender.com"; 
-
     const handleLogin = async (e) => {
         e.preventDefault();
         setMessage('');
@@ -19,12 +19,14 @@ function Login({ onLoginSuccess, onSwitchToRegister }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                // CRITICAL FIX: Include credentials so the browser accepts the HTTP-only cookie
+                credentials: 'include', 
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // Login successful (for now, we just switch the view)
+                // Login successful (the cookie is now set)
                 setMessage(`Success: ${data.message}`);
                 onLoginSuccess(); // Tell App.js to switch to the ToDo list
             } else {
@@ -33,6 +35,7 @@ function Login({ onLoginSuccess, onSwitchToRegister }) {
             }
 
         } catch (error) {
+            console.error('Login Network Error:', error);
             setMessage('Network error. Could not connect to the server.');
         }
     };
@@ -66,7 +69,7 @@ function Login({ onLoginSuccess, onSwitchToRegister }) {
                     Don't have an account? 
                     <button 
                         style={{marginLeft: '10px'}} 
-                        onClick={onSwitchToRegister} // Button to switch to Register view
+                        onClick={onSwitchToRegister} 
                     >
                         Sign Up
                     </button>
