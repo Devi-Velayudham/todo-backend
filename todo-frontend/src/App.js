@@ -23,7 +23,7 @@ function App() {
     try {
         // CRITICAL CHANGE: Use the imported helper for better error handling and consistency
         // Note: The helper will automatically include credentials and handle the URL base.
-        const response = await fetchWithCredentials('/todos', { 
+        const response = await fetchWithCredentials(`${BACKEND_URL}/todos`, { 
             method: 'GET' 
         });
 
@@ -67,7 +67,7 @@ function App() {
     
     try {
         // Use the helper for consistency, although a regular fetch with credentials works fine for logout
-        await fetchWithCredentials('/logout', { 
+        await fetchWithCredentials(`${BACKEND_URL}/logout`, { 
             method: 'POST', 
         });
         console.log("Logout successful on server.");
