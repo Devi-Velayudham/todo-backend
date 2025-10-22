@@ -106,8 +106,7 @@ app.post('/login', async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            // CRITICAL FOR RENDER: Explicitly setting the domain 
-            domain: '.onrender.com', 
+            // CRITICAL FIX: REMOVED domain: '.onrender.com' 
             maxAge: 3600000 // 1 hour
         });
 
@@ -123,17 +122,17 @@ app.post('/login', async (req, res) => {
 });
 
 
-// @route POST /logout (FIXED: Changed from GET to POST and added cache-disabling headers)
+// @route POST /logout
 app.post('/logout', (req, res) => {
     // 1. Clear the authentication cookie.
     res.clearCookie('token', { 
         httpOnly: true,
         secure: true, 
         sameSite: 'none',
-        domain: '.onrender.com' // Use the same domain settings for clearing
+        // CRITICAL FIX: REMOVED domain: '.onrender.com' 
     });
 
-    // 2. Add headers to explicitly prevent the browser and proxies from caching this response (Fixes 304)
+    // 2. Add headers to explicitly prevent the browser and proxies from caching this response
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
