@@ -1,22 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./TodoApp.css"; // Assuming you have a CSS file for styling
 
-// Define the backend URL once (Ensure this matches App.js)
-const BACKEND_URL = "https://todo-backend-sawo.onrender.com";
+// CRITICAL CHANGE 1: Import the central constants and helper from api.js
+import { BACKEND_URL, fetchWithCredentials } from "./api"; 
 
-// Helper function to handle fetch requests with credentials
-const fetchWithCredentials = (url, options = {}) => {
-  return fetch(url, {
-    ...options,
-    // CRITICAL: Tells the browser to send the HTTP-only cookie
-    credentials: 'include', 
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-};
-
+// CRITICAL CHANGE 2: REMOVED the local BACKEND_URL definition
+// CRITICAL CHANGE 3: REMOVED the local fetchWithCredentials helper definition
 
 function TodoApp({ onLogout }) {
   const [todos, setTodos] = useState([]);
@@ -29,7 +18,7 @@ function TodoApp({ onLogout }) {
     setLoading(true);
     setError(null);
     try {
-      // Use the helper fetch function
+      // Use the imported helper fetch function
       const response = await fetchWithCredentials(`${BACKEND_URL}/todos`, {
         method: 'GET'
       });
@@ -68,7 +57,7 @@ function TodoApp({ onLogout }) {
 
     setError(null);
     try {
-      // FIX: Use fetchWithCredentials instead of the undefined 'authenticatedFetch'
+      // Uses the imported fetchWithCredentials
       const response = await fetchWithCredentials(`${BACKEND_URL}/todos`, {
         method: "POST",
         body: JSON.stringify({ text: todoText.trim() }),
@@ -89,7 +78,7 @@ function TodoApp({ onLogout }) {
   const toggleComplete = async (id, completed) => {
     setError(null);
     try {
-      // FIX: Use fetchWithCredentials instead of the undefined 'authenticatedFetch'
+      // Uses the imported fetchWithCredentials
       const response = await fetchWithCredentials(`${BACKEND_URL}/todos/${id}`, {
         method: "PUT",
         body: JSON.stringify({ completed: !completed }), // Toggle the value
@@ -111,7 +100,7 @@ function TodoApp({ onLogout }) {
   const deleteTodo = async (id) => {
     setError(null);
     try {
-      // FIX: Use fetchWithCredentials instead of the undefined 'authenticatedFetch'
+      // Uses the imported fetchWithCredentials
       const response = await fetchWithCredentials(`${BACKEND_URL}/todos/${id}`, {
         method: "DELETE",
       });

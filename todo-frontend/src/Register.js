@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './TodoApp.css'; // Use the same CSS for styling
+// CRITICAL CHANGE 1: Import the central BACKEND_URL
+import { BACKEND_URL } from "./api"; 
 
 // --- CHANGE 1: Accept props from App.js ---
 function Register({ onSuccess, onSwitchToLogin }) {
@@ -7,15 +9,16 @@ function Register({ onSuccess, onSwitchToLogin }) {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     
-    // Use the live backend URL
-    const backendURL = "https://todo-backend-sawo.onrender.com"; 
+    // CRITICAL CHANGE 2: REMOVE the local backendURL definition
+    // const backendURL = "https://todo-backend-sawo.onrender.com"; 
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setMessage('');
 
         try {
-            const response = await fetch(`${backendURL}/register`, {
+            // CRITICAL CHANGE 3: Use the imported BACKEND_URL
+            const response = await fetch(`${BACKEND_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
