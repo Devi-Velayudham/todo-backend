@@ -1,218 +1,176 @@
 import React, { useState, useEffect } from "react";
-import "./TodoApp.css";
+import "./TodoApp.css"; // Assuming you have a CSS file for styling
 
+// Define the backend URL once (Ensure this matches App.js)
 const BACKEND_URL = "https://todo-backend-sawo.onrender.com";
 
-function TodoApp({ onLogout }) { 
-  const [todos, setTodos] = useState([]);
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Helper function for all authenticated fetches
-  const authenticatedFetch = async (url, options = {}) => {
-    // 1. Define default headers and credentials
-    const defaultHeaders = { 
-        'Content-Type': 'application/json',
-    };
-
-    // 2. Construct final fetch options
-    const fetchOptions = {
-        // Always include credentials for secure cookie transfer
-        credentials: 'include', 
-        
-        // Merge default headers with any custom headers passed in options
-        headers: { 
-            ...defaultHeaders,
-            ...options.headers 
-        },
-        
-        // Spread remaining options (like method, body, etc.)
-        ...options 
-    };
-    // Remove the original 'headers' property to avoid duplication when spreading options
-    delete fetchOptions.headers; 
-
-    // Execute the fetch request
-    const response = await fetch(url, { ...fetchOptions, headers: fetchOptions.headers });
-    
-    // Critical: Check for 401 on every authenticated request
-    if (response.status === 401) {
-        console.error("Authentication failed during CRUD operation (401). Logging out user.");
-        onLogout(); 
-        // Throw an error to stop further processing in the calling function
-        throw new Error("Unauthorized"); 
-    }
-
-    return response;
-  }
-    
-  // Function to fetch todos 
-  const fetchTodos = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      // Use the authenticatedFetch for GET request
-      const response = await authenticatedFetch(`${BACKEND_URL}/todos`, {
-        method: "GET",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setTodos(data);
-
-    } catch (err) {
-      console.error("Error fetching todos:", err);
-      // Only set an error message if the error wasn't the logout trigger
-      if (err.message !== "Unauthorized") {
-          setError("Failed to load todos. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial fetch on component mount
-  useEffect(() => {
-    // Check if the component is already logged in (based on App.js) before fetching
-    fetchTodos();
-  }, []); 
+// Helper function to handle fetch requests with credentials
+const fetchWithCredentials = (url, options = {}) => {
+  return fetch(url, {
+    ...options,
+    // CRITICAL: Tells the browser to send the HTTP-only cookie
+    credentials: 'include', 
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+};
 
 
-  // --- CRUD Functions ---
+function TodoApp({ onLogout }) {
+  const [todos, setTodos] = useState([]);
+  const [todoText, setTodoText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const addTodo = async () => {
-    if (!text.trim()) return;
-    const todoText = text.trim();
-    setText(""); // Clear input immediately
-    
-    try {
-      const response = await authenticatedFetch(`${BACKEND_URL}/todos`, {
-        method: "POST",
-        body: JSON.stringify({ text: todoText })
-      });
-      
-      if (!response.ok) throw new Error("Failed to add todo.");
-      
-      const newTodo = await response.json();
-      setTodos((prevTodos) => [...prevTodos, newTodo]);
-    
-    } catch (err) {
-      console.error("Error adding todo:", err);
-      if (err.message !== "Unauthorized") {
-          setError("Could not add todo.");
-          setText(todoText); // Restore text if save failed
-      }
-    }
-  };
+  // --- Fetching Logic ---
+  const fetchTodos = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Use the helper fetch function
+      const response = await fetchWithCredentials(`${BACKEND_URL}/todos`, {
+        method: 'GET'
+      });
+      
+      if (response.status === 401) {
+          // If a 401 is received here, the session expired or is invalid
+          // Call the external logout handler to clear state and redirect
+          onLogout();
+          return;
+      }
 
-  const toggleComplete = async (id, completed) => {
-    try {
-      const response = await authenticatedFetch(`${BACKEND_URL}/todos/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({ completed: !completed }) // Toggle the value
-      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch todos.");
+      }
 
-      if (!response.ok) throw new Error("Failed to toggle todo.");
+      const data = await response.json();
+      setTodos(data);
+    } catch (err) {
+      console.error("Error fetching todos:", err);
+      setError("Could not load todos. Please try logging out and back in.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const updatedTodo = await response.json();
-      setTodos(todos.map(t => (t._id === id ? updatedTodo : t)));
+  // Fetch todos on component mount
+  useEffect(() => {
+    fetchTodos();
+  }, []);
 
-    } catch (err) {
-      console.error("Error toggling todo:", err);
-       if (err.message !== "Unauthorized") {
-           setError("Could not update todo status.");
-       }
-    }
-  };
+  // --- CRUD Operations ---
 
-  const deleteTodo = async (id) => {
-    try {
-      const response = await authenticatedFetch(`${BACKEND_URL}/todos/${id}`, { 
-        method: "DELETE" 
-      });
+  const addTodo = async (e) => {
+    e.preventDefault();
+    if (!todoText.trim()) return;
 
-      if (!response.ok) throw new Error("Failed to delete todo.");
+    setError(null);
+    try {
+      // FIX: Use fetchWithCredentials instead of the undefined 'authenticatedFetch'
+      const response = await fetchWithCredentials(`${BACKEND_URL}/todos`, {
+        method: "POST",
+        body: JSON.stringify({ text: todoText.trim() }),
+      });
 
-      setTodos(todos.filter(t => t._id !== id));
-      
-    } catch (err) {
-      console.error("Error deleting todo:", err);
-       if (err.message !== "Unauthorized") {
-           setError("Could not delete todo.");
-       }
-    }
-  };
+      if (response.status === 401) { onLogout(); return; }
+      if (!response.ok) throw new Error("Failed to add todo.");
 
-  // --- Render Logic ---
+      const newTodo = await response.json();
+      setTodos((prevTodos) => [newTodo, ...prevTodos]);
+      setTodoText("");
+    } catch (err) {
+      console.error("Error adding todo:", err);
+      setError("Could not add todo.");
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="app">
-        <div className="todo-container">
-          <h1>🌟 My Todo List</h1>
-          <p>Loading your list...</p>
-        </div>
-        <button onClick={onLogout} style={{ position: 'absolute', bottom: '10px', right: '10px' }}>Log Out</button>
-      </div>
-    );
-  }
+  const toggleComplete = async (id, completed) => {
+    setError(null);
+    try {
+      // FIX: Use fetchWithCredentials instead of the undefined 'authenticatedFetch'
+      const response = await fetchWithCredentials(`${BACKEND_URL}/todos/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ completed: !completed }), // Toggle the value
+      });
+      
+      if (response.status === 401) { onLogout(); return; }
+      if (!response.ok) throw new Error("Failed to update todo.");
 
-  if (error) {
-    return (
-      <div className="app">
-        <div className="todo-container">
-          <h1>🌟 My Todo List</h1>
-          <p style={{ color: 'red' }}>Error: {error}</p>
-          <button onClick={fetchTodos} className="mt-4">Try Again</button>
-          <button onClick={onLogout} style={{ marginTop: '10px' }}>Go to Login</button>
-        </div>
-      </div>
-    );
-  }
+      const updatedTodo = await response.json();
+      setTodos((prevTodos) => 
+        prevTodos.map((todo) => (todo._id === id ? updatedTodo : todo))
+      );
+    } catch (err) {
+      console.error("Error toggling todo:", err);
+      setError("Could not update todo status.");
+    }
+  };
 
-  return (
-    <div className="app">
-      <div className="todo-container">
-        <h1>🌟 My Todo List</h1>
+  const deleteTodo = async (id) => {
+    setError(null);
+    try {
+      // FIX: Use fetchWithCredentials instead of the undefined 'authenticatedFetch'
+      const response = await fetchWithCredentials(`${BACKEND_URL}/todos/${id}`, {
+        method: "DELETE",
+      });
+      
+      if (response.status === 401) { onLogout(); return; }
+      if (!response.ok) throw new Error("Failed to delete todo.");
 
-        <button 
-            onClick={onLogout} 
-            style={{ position: 'absolute', top: '10px', right: '10px', padding: '8px 15px', borderRadius: '5px', backgroundColor: '#f44336', color: 'white', border: 'none', cursor: 'pointer' }}
-        >
-            Log Out
-        </button> 
+      // Remove the todo from the local state
+      setTodos((prevTodos) => prevTodos.filter((todo) => todo._id !== id));
+    } catch (err) {
+      console.error("Error deleting todo:", err);
+      setError("Could not delete todo.");
+    }
+  };
 
-        <div className="input-section">
-          <input
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Enter a new todo"
-          />
-          <button onClick={addTodo}>➕ Add</button>
-        </div>
 
-        <ul>
-          {todos.map(todo => (
-            <li key={todo._id} className={todo.completed ? "completed" : ""}>
-              <span>{todo.text}</span>
-              <div className="actions">
-                <button onClick={() => toggleComplete(todo._id, todo.completed)}>
-                  {todo.completed ? "↩ Undo" : "✔ Done"}
-                </button>
-                <button className="delete" onClick={() => deleteTodo(todo._id)}>
-                  🗑 Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
+  // --- Render Logic ---
+  if (loading) return <div className="todo-container">Loading Todos...</div>;
+  
+
+  return (
+    <div className="todo-container">
+      <div className="header">
+        <h1>My To-Do List</h1>
+        <button onClick={onLogout} className="logout-button">
+          Logout
+        </button>
+      </div>
+
+      <form onSubmit={addTodo} className="input-form">
+        <input
+          type="text"
+          placeholder="Add a new task..."
+          value={todoText}
+          onChange={(e) => setTodoText(e.target.value)}
+        />
+        <button type="submit">Add Task</button>
+      </form>
+      
+      {error && <p className="error-message">{error}</p>}
+
+      <div className="todo-list">
+        {todos.length === 0 && !loading && <p className="empty-message">You have no tasks! Time to relax or add a new one.</p>}
+        {todos.map((todo) => (
+          <div key={todo._id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+            <span 
+                className="todo-text" 
+                onClick={() => toggleComplete(todo._id, todo.completed)}
+            >
+                {todo.text}
+            </span>
+            <button onClick={() => deleteTodo(todo._id)} className="delete-button">
+              &#x2715; 
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default TodoApp;
