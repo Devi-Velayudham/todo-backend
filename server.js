@@ -105,7 +105,7 @@ app.post('/login', async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: true,
-            sameSite: 'Lax',
+            sameSite: 'none',
             // CRITICAL FIX: REMOVED domain: '.onrender.com' 
             maxAge: 3600000 // 1 hour
         });
