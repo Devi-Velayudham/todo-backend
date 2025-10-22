@@ -4,16 +4,14 @@
 export const BACKEND_URL = "https://todo-backend-sawo.onrender.com";
 
 /**
- * Custom fetch wrapper to automatically include cookies and prepend the BACKEND_URL.
- * @param {string} path The relative path to the backend (e.g., '/todos', '/login').
+ * Custom fetch wrapper to automatically include cookies for cross-origin requests.
+ * @param {string} url The full URL for the request (e.g., 'https://your-backend.onrender.com/todos').
  * @param {object} options Fetch options object.
  * @returns {Promise<Response>} The fetch Response object.
  */
-export const fetchWithCredentials = (path, options = {}) => {
-  // CRITICAL FIX: Combine BACKEND_URL and the path
-  const fullUrl = `${BACKEND_URL}${path}`;
-
-  return fetch(fullUrl, { 
+export const fetchWithCredentials = (url, options = {}) => {
+  // CORRECT SYNTAX: Notice the curly brace is the second argument to fetch
+  return fetch(url, { 
     ...options,
     // CRITICAL: Tells the browser to send the HTTP-only cookie
     credentials: 'include', 
@@ -24,4 +22,3 @@ export const fetchWithCredentials = (path, options = {}) => {
     },
   });
 };
-
