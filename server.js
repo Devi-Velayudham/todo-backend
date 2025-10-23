@@ -21,10 +21,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- CORS Configuration (Crucial for Deployment) ---
 const corsOptions = {
-    origin: ["https://todo-frontend-app-bqpl.onrender.com"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    // This is your live frontend URL
+    origin: "https://todo-frontend-app-bqpl.onrender.com", 
+    credentials: true, // Allow cookies (tokens) to be sent/received
 };
 
 // --- Middleware ---
@@ -108,7 +107,6 @@ app.post('/login', async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            path: '/',
             // CRITICAL FIX: REMOVED domain: '.onrender.com' 
             maxAge: 3600000 // 1 hour
         });
